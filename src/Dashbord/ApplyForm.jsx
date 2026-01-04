@@ -20,7 +20,11 @@ function ApplyData() {
   const fetchApplyData = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${api_url}/api/applications`);
+      const res = await axios.get(`${api_url}/api/applications`,{
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
       const arr = Array.isArray(res.data.data) ? res.data.data : [];
       setApplyData(arr);
       setOriginalData(arr);
@@ -53,7 +57,11 @@ function ApplyData() {
   const deleteRow = async (id) => {
     try {
       setDeletingId(id);
-      await axios.delete(`${api_url}/api/delete/${id}`);
+      await axios.delete(`${api_url}/api/delete/${id}`,{
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
       setApplyData(applyData.filter((item) => item._id !== id));
       setOriginalData(originalData.filter((item) => item._id !== id));
     } catch (error) {

@@ -80,7 +80,11 @@ export default function ChangePasswordForm() {
           email: form.email,
           currentPassword: form.currentPassword,
           newPassword: form.newPassword,
-        }
+        },{
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
       );
       showToast(response.data.message || "Password updated successfully!", "success");
       setForm({

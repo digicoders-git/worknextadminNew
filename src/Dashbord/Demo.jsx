@@ -21,7 +21,13 @@ function Demo() {
   const fetchContactData = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${api_url}/api/demo`);
+
+      const res = await axios.get(`${api_url}/api/demo`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
       const dataArray = Array.isArray(res.data.data) ? res.data.data : [];
 
       setContactData(dataArray);
@@ -57,7 +63,11 @@ function Demo() {
   const deleteRow = async (id) => {
     try {
       setDeletingId(id);
-      await axios.delete(`${api_url}/api/demo/${id}`);
+      await axios.delete(`${api_url}/api/demo/${id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
       setContactData(contactData.filter((item) => item._id !== id));
       setOriginalData(originalData.filter((item) => item._id !== id));
     } catch (err) {

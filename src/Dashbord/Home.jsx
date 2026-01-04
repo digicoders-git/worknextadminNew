@@ -18,9 +18,21 @@ function Home() {
     try {
       setLoading(true);
 
-      const resContacts = await axios.get(`${api_url}/api/contact/contact`);
-      const resDemo = await axios.get(`${api_url}/api/demo`);
-      const resApply = await axios.get(`${api_url}/api/applications`);
+      const resContacts = await axios.get(`${api_url}/api/contact/contact`,{
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      const resDemo = await axios.get(`${api_url}/api/demo`,{
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      const resApply = await axios.get(`${api_url}/api/applications`,{
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
 
       setTotalContacts(resContacts.data.data.length);
       setTotalDemo(resDemo.data.data.length);

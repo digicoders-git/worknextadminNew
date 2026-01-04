@@ -10,7 +10,7 @@ function Contact() {
   const [originalData, setOriginalData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
- const api_url = import.meta.env.VITE_API_URL;
+  const api_url = import.meta.env.VITE_API_URL;
 
   // FETCH DATA
   useEffect(() => {
@@ -20,8 +20,12 @@ function Contact() {
   const fetchContactData = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${api_url}/api/contact/contact`);
-      
+      const res = await axios.get(`${api_url}/api/contact/Contact`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
       const dataArray = Array.isArray(res.data.data) ? res.data.data : [];
 
       setContactData(dataArray);
@@ -37,7 +41,11 @@ function Contact() {
   const deleteRow = async (id) => {
     try {
       setDeletingId(id);
-      await axios.delete(`${api_url}/api/contact/contact/${id}`);
+      await axios.delete(`${api_url}/api/contact/Contact/${id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
       setContactData(contactData.filter((item) => item._id !== id));
       setOriginalData(originalData.filter((item) => item._id !== id));
     } catch (err) {
@@ -56,12 +64,13 @@ function Contact() {
       return;
     }
 
-    const filtered = originalData.filter((item) =>
-      item.name.toLowerCase().includes(search) ||
-      item.email.toLowerCase().includes(search) ||
-      item.mobile.toLowerCase().includes(search) ||
-      item.service.toLowerCase().includes(search) ||
-      item.message.toLowerCase().includes(search)
+    const filtered = originalData.filter(
+      (item) =>
+        item.name.toLowerCase().includes(search) ||
+        item.email.toLowerCase().includes(search) ||
+        item.mobile.toLowerCase().includes(search) ||
+        item.service.toLowerCase().includes(search) ||
+        item.message.toLowerCase().includes(search)
     );
 
     setContactData(filtered);
@@ -152,7 +161,9 @@ function Contact() {
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-700 mb-4"></div>
-          <p className="text-xl font-semibold text-gray-700">Loading Contact Messages...</p>
+          <p className="text-xl font-semibold text-gray-700">
+            Loading Contact Messages...
+          </p>
         </div>
       </div>
     );
@@ -160,17 +171,12 @@ function Contact() {
 
   return (
     <div className="p-4 md:p-6 bg-gray-100 min-h-screen">
-
       {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-3">
-
-        <h1 className="text-3xl font-bold text-gray-800">
-          Contact Messages
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-800">Contact Messages</h1>
 
         {/* SEARCH + BUTTONS ROW */}
         <div className="flex flex-col sm:flex-row items-center gap-3">
-
           {/* SEARCH BAR */}
           <input
             type="text"
@@ -212,7 +218,9 @@ function Contact() {
       {contactData.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl shadow-lg">
           <div className="text-6xl mb-4">📧</div>
-          <p className="text-gray-500 text-xl font-medium">No Contact Messages Found</p>
+          <p className="text-gray-500 text-xl font-medium">
+            No Contact Messages Found
+          </p>
         </div>
       ) : (
         <div className="overflow-hidden shadow-2xl rounded-2xl bg-white border border-gray-200">
@@ -220,25 +228,44 @@ function Contact() {
             <table className="min-w-full">
               <thead>
                 <tr className="bg-gradient-to-r from-green-600 via-green-600 to-emerald-700 text-white">
-                  <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Mobile</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Service</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Message</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold uppercase tracking-wider">Action</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">
+                    Mobile
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">
+                    Service
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">
+                    Message
+                  </th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold uppercase tracking-wider">
+                    Action
+                  </th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-gray-200">
                 {contactData.map((item, index) => (
-                  <tr key={item._id} className={`transition-all hover:bg-green-50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                  <tr
+                    key={item._id}
+                    className={`transition-all hover:bg-green-50 ${
+                      index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                    }`}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="h-10 w-10 flex-shrink-0 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold shadow-md">
                           {item.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{item.name}</div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {item.name}
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -246,7 +273,9 @@ function Contact() {
                       <div className="text-sm text-gray-700">{item.email}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-700 font-medium">{item.mobile}</div>
+                      <div className="text-sm text-gray-700 font-medium">
+                        {item.mobile}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border border-green-200">
@@ -283,7 +312,6 @@ function Contact() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

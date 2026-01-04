@@ -1,11 +1,12 @@
 import { Routes, Route } from "react-router-dom";
-import MainDashBord from "./Dashbord.jsx/MainDashBord";
-import Home from "./Dashbord.jsx/Home";
-import Contact from "./Dashbord.jsx/Contact";
-import Demo from "./Dashbord.jsx/Demo";
+import MainDashBord from "./Dashbord/MainDashBord";
+import Home from "./Dashbord/Home";
+import Contact from "./Dashbord/Contact";
+import Demo from "./Dashbord/Demo";
+// import AdminLogin from "./Page/AdminLogin";
 import AdminLogin from "./Page.jsx/AdminLogin";
-import ChangePasswordForm from "./Dashbord.jsx/ChnagePassword";
-import ApplyData from "./Dashbord.jsx/ApplyForm";
+import ChangePasswordForm from "./Dashbord/ChnagePassword";
+import ApplyData from "./Dashbord/ApplyForm";
 
 function App() {
   return (
