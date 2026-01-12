@@ -31,7 +31,11 @@ function Contact() {
       setContactData(dataArray);
       setOriginalData(dataArray); // For search reset
     } catch (err) {
-      alert("Unable to fetch contact data! " + err);
+      if (err.response) {
+        alert(err.response.data.message);
+      } else {
+        alert("Server not reachable");
+      }
     } finally {
       setLoading(false);
     }
