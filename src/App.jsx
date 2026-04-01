@@ -7,6 +7,7 @@ import Demo from "./Dashbord/Demo";
 import AdminLogin from "./Page.jsx/AdminLogin";
 import ChangePasswordForm from "./Dashbord/ChnagePassword";
 import ApplyData from "./Dashbord/ApplyForm";
+import Blog from "./Dashbord/Blog";
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
           <Route path="Demo" element={<Demo />} />
           <Route path="ApplyForm" element={<ApplyData />} />
           <Route path="ChangePasswordForm" element={<ChangePasswordForm />} />
+          <Route path="Blog" element={<Blog />} />
         </Route>
       </Routes>
     </>

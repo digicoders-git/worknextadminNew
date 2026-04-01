@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { FaHome, FaPhone, FaVideo, FaSignOutAlt, FaKey } from "react-icons/fa";
+import { FaHome, FaPhone, FaVideo, FaSignOutAlt, FaKey, FaBlog } from "react-icons/fa";
 import { GiHamburgerMenu } from "react-icons/gi";
 
 function MainDashBord() {
@@ -76,6 +76,14 @@ function MainDashBord() {
           >
             <FaVideo size={open ? 22 : 30} />
             {open && <span>Apply Form</span>}
+          </NavLink>
+
+          <NavLink
+            to="Blog"
+            className="flex items-center gap-4 text-[18px] px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-all"
+          >
+            <FaBlog size={open ? 22 : 30} />
+            {open && <span>Blog</span>}
           </NavLink>
 
           <NavLink
