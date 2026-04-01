@@ -187,7 +187,7 @@ function Blog() {
 
   // ─── SHARED INPUT STYLE ───────────────────────────────
   const inp = "border border-gray-300 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 w-full bg-gray-50";
-
+  //  hehehehehheheheheehehe
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50/30">
 
