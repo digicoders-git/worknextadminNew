@@ -366,7 +366,7 @@ function Blog() {
                     >
                       <td className="px-4 py-3">
                         <img
-                          src={`${api_url}/uploads/${blog.image}`}
+                          src={blog.image || "/logo.png"}
                           alt={blog.heading}
                           className="w-16 h-12 object-cover rounded-lg border-2 border-gray-200 group-hover:border-indigo-400 transition-all"
                           onError={(e) => (e.target.src = "/logo.png")}
@@ -482,7 +482,7 @@ function Blog() {
                   <div className="p-5 space-y-4">
                     {viewBlog.image && (
                       <img
-                        src={`${api_url}/uploads/${viewBlog.image}`}
+                        src={viewBlog.image}
                         className="w-full h-56 object-cover rounded-xl border-2 border-indigo-100"
                         onError={(e) => (e.target.src = "/logo.png")}
                       />
@@ -565,7 +565,7 @@ function Blog() {
                     {updatePreview ? (
                       <img src={updatePreview} className="mt-3 h-28 rounded-xl object-cover border-2 border-amber-200" />
                     ) : updateBlog.image && (
-                      <img src={`${api_url}/uploads/${updateBlog.image}`} className="mt-3 h-28 rounded-xl object-cover border opacity-60" />
+                      <img src={updateBlog.image} className="mt-3 h-28 rounded-xl object-cover border opacity-60" />
                     )}
                   </div>
                   <motion.button
