@@ -1,18 +1,51 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
+import JoditEditor from "jodit-react";
 import {
   FaSyncAlt, FaTrash, FaPlus, FaTimes, FaEye, FaEdit,
   FaSearch, FaFilter, FaCalendarAlt, FaUser, FaTag,
-  FaImage, FaArrowLeft, FaCheckCircle, FaExclamationTriangle
+  FaImage, FaCheckCircle, FaExclamationTriangle
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 
-const api_url = import.meta.env.VITE_API_URL;
 const token = () => localStorage.getItem("token");
 
-const emptyForm = { heading: "", description: "", category: "", author: "", tags: "", image: null };
+const emptyForm = { heading: "", description: "", category: "", author: "", tags: "", image: [] };
+
 
 function Blog() {
+  const api_url = import.meta.env.VITE_API_URL;
+
+  const joditConfig = useMemo(() => ({
+    readonly: false,
+    placeholder: "Start typing your amazing blog content...",
+    height: 400,
+    toolbarButtonSize: "middle",
+    theme: "default",
+    saveModeInCookie: false,
+    spellcheck: true,
+    language: "en",
+    toolbarAdaptive: false,
+    showCharsCounter: true,
+    showWordsCounter: true,
+    showXPathInStatusbar: false,
+    askBeforePasteHTML: true,
+    askBeforePasteFromWord: true,
+    buttons: [
+      "source", "|",
+      "bold", "italic", "underline", "strikethrough", "|",
+      "ul", "ol", "|",
+      "outdent", "indent", "|",
+      "font", "fontsize", "brush", "paragraph", "|",
+      "image", "video", "table", "link", "|",
+      "align", "undo", "redo", "|",
+      "hr", "eraser", "copyformat", "|",
+      "fullsize", "selectall", "print", "about"
+    ],
+    uploader: {
+      insertImageAsBase64URI: true
+    }
+  }), []);
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
@@ -22,7 +55,7 @@ function Blog() {
   // Create
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState(emptyForm);
-  const [createPreview, setCreatePreview] = useState(null);
+  const [createPreview, setCreatePreview] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
   // View
@@ -32,7 +65,7 @@ function Blog() {
   // Update
   const [updateBlog, setUpdateBlog] = useState(null);
   const [updateForm, setUpdateForm] = useState(emptyForm);
-  const [updatePreview, setUpdatePreview] = useState(null);
+  const [updatePreview, setUpdatePreview] = useState([]);
   const [updating, setUpdating] = useState(false);
 
   // Toast Notifications
@@ -52,8 +85,9 @@ function Blog() {
         headers: { Authorization: `Bearer ${token()}` },
       });
       setBlogs(Array.isArray(res.data.data) ? res.data.data : []);
-    } catch {
-      showToast("Failed to fetch blogs!", "error");
+    } catch (err) {
+      console.error("Blog fetch error:", err?.response?.status, err?.response?.data, err?.message);
+      showToast(err?.response?.data?.message || "Failed to fetch blogs!", "error");
     }
     finally { setLoading(false); }
   };
@@ -73,9 +107,9 @@ function Blog() {
   // ─── CREATE ───────────────────────────────────────────
   const handleCreateChange = (e) => {
     if (e.target.name === "image") {
-      const file = e.target.files[0];
-      setCreateForm({ ...createForm, image: file });
-      setCreatePreview(file ? URL.createObjectURL(file) : null);
+      const files = Array.from(e.target.files);
+      setCreateForm({ ...createForm, image: files });
+      setCreatePreview(files.map(file => URL.createObjectURL(file)));
     } else {
       setCreateForm({ ...createForm, [e.target.name]: e.target.value });
     }
@@ -83,14 +117,20 @@ function Blog() {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (!createForm.image) {
-      showToast("Image is required!", "error");
+    if (createForm.image.length === 0) {
+      showToast("At least one image is required!", "error");
       return;
     }
     setSubmitting(true);
     try {
       const fd = new FormData();
-      Object.entries(createForm).forEach(([k, v]) => fd.append(k, v));
+      Object.entries(createForm).forEach(([k, v]) => {
+        if (k === "image") {
+          v.forEach(file => fd.append("image", file));
+        } else {
+          fd.append(k, v);
+        }
+      });
       await axios.post(`${api_url}/api/blog`, fd, {
         headers: { Authorization: `Bearer ${token()}`, "Content-Type": "multipart/form-data" },
       });
@@ -130,16 +170,16 @@ function Blog() {
       category: blog.category,
       author: blog.author,
       tags: Array.isArray(blog.tags) ? blog.tags.join(",") : blog.tags,
-      image: null,
+      image: [],
     });
-    setUpdatePreview(null);
+    setUpdatePreview([]);
   };
 
   const handleUpdateChange = (e) => {
     if (e.target.name === "image") {
-      const file = e.target.files[0];
-      setUpdateForm({ ...updateForm, image: file });
-      setUpdatePreview(file ? URL.createObjectURL(file) : null);
+      const files = Array.from(e.target.files);
+      setUpdateForm({ ...updateForm, image: files });
+      setUpdatePreview(files.map(file => URL.createObjectURL(file)));
     } else {
       setUpdateForm({ ...updateForm, [e.target.name]: e.target.value });
     }
@@ -155,7 +195,9 @@ function Blog() {
       fd.append("category", updateForm.category);
       fd.append("author", updateForm.author);
       fd.append("tags", updateForm.tags);
-      if (updateForm.image) fd.append("image", updateForm.image);
+      if (updateForm.image.length > 0) {
+        updateForm.image.forEach(file => fd.append("image", file));
+      }
 
       await axios.put(`${api_url}/api/blog/${updateBlog._id}`, fd, {
         headers: { Authorization: `Bearer ${token()}`, "Content-Type": "multipart/form-data" },
@@ -187,7 +229,7 @@ function Blog() {
 
   // ─── SHARED INPUT STYLE ───────────────────────────────
   const inp = "border border-gray-300 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 w-full bg-gray-50";
-  //  hehehehehheheheheehehe
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50/30">
 
@@ -263,19 +305,31 @@ function Blog() {
                   <input name="author" value={createForm.author} onChange={handleCreateChange} placeholder="Author Name *" required className={inp} />
                   <input name="category" value={createForm.category} onChange={handleCreateChange} placeholder="Category *" required className={inp} />
                   <input name="tags" value={createForm.tags} onChange={handleCreateChange} placeholder="Tags: web,react,AI" className={inp} />
-                  <textarea name="description" value={createForm.description} onChange={handleCreateChange} placeholder="Description *" required rows={3} className={`${inp} md:col-span-2`} />
+                  <div className="md:col-span-2">
+                    <label className="block text-gray-700 font-medium mb-1">Description *</label>
+                    <JoditEditor
+                      value={createForm.description}
+                      config={joditConfig}
+                      onBlur={(newContent) => setCreateForm({ ...createForm, description: newContent })}
+                    />
+                  </div>
                   <div className="md:col-span-2">
                     <label className="block text-gray-700 font-medium mb-2 flex items-center gap-2">
                       <FaImage className="text-indigo-500" /> Image <span className="text-red-500 text-sm">*</span>
                     </label>
-                    <input type="file" name="image" accept="image/*" onChange={handleCreateChange} className="border border-gray-300 rounded-xl px-4 py-2 w-full bg-gray-50" />
-                    {createPreview && (
-                      <motion.img
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        src={createPreview}
-                        className="mt-3 h-32 rounded-xl object-cover border-2 border-indigo-200"
-                      />
+                    <input type="file" name="image" accept="image/*" multiple onChange={handleCreateChange} className="border border-gray-300 rounded-xl px-4 py-2 w-full bg-gray-50" />
+                    {createPreview.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {createPreview.map((url, idx) => (
+                          <motion.img
+                            key={idx}
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            src={url}
+                            className="h-24 w-24 rounded-xl object-cover border-2 border-indigo-200"
+                          />
+                        ))}
+                      </div>
                     )}
                   </div>
                   <div className="md:col-span-2 flex justify-end">
@@ -366,7 +420,7 @@ function Blog() {
                     >
                       <td className="px-4 py-3">
                         <img
-                          src={blog.image || "/logo.png"}
+                          src={(Array.isArray(blog.image) ? blog.image[0] : blog.image) || "/logo.png"}
                           alt={blog.heading}
                           className="w-16 h-12 object-cover rounded-lg border-2 border-gray-200 group-hover:border-indigo-400 transition-all"
                           onError={(e) => (e.target.src = "/logo.png")}
@@ -481,11 +535,16 @@ function Blog() {
                 ) : (
                   <div className="p-5 space-y-4">
                     {viewBlog.image && (
-                      <img
-                        src={viewBlog.image}
-                        className="w-full h-56 object-cover rounded-xl border-2 border-indigo-100"
-                        onError={(e) => (e.target.src = "/logo.png")}
-                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        {(Array.isArray(viewBlog.image) ? viewBlog.image : [viewBlog.image]).map((img, idx) => (
+                          <img
+                            key={idx}
+                            src={img}
+                            className="w-full h-32 object-cover rounded-xl border-2 border-indigo-100"
+                            onError={(e) => (e.target.src = "/logo.png")}
+                          />
+                        ))}
+                      </div>
                     )}
                     <div>
                       <p className="text-xs text-indigo-600 font-semibold uppercase tracking-wider">Heading</p>
@@ -503,7 +562,7 @@ function Blog() {
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 font-semibold uppercase">Description</p>
-                      <p className="text-sm text-gray-700 leading-relaxed mt-1">{viewBlog.description}</p>
+                      <div className="text-sm text-gray-700 leading-relaxed mt-1 prose max-w-none" dangerouslySetInnerHTML={{ __html: viewBlog.description }} />
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 font-semibold uppercase mb-2">Tags</p>
@@ -556,16 +615,31 @@ function Blog() {
                   <input name="author" value={updateForm.author} onChange={handleUpdateChange} placeholder="Author *" required className={inp} />
                   <input name="category" value={updateForm.category} onChange={handleUpdateChange} placeholder="Category *" required className={inp} />
                   <input name="tags" value={updateForm.tags} onChange={handleUpdateChange} placeholder="Tags: web,react,AI" className={inp} />
-                  <textarea name="description" value={updateForm.description} onChange={handleUpdateChange} placeholder="Description *" required rows={3} className={inp} />
+                  <div>
+                    <label className="block text-gray-700 font-medium mb-1">Description *</label>
+                    <JoditEditor
+                      value={updateForm.description}
+                      config={joditConfig}
+                      onBlur={(newContent) => setUpdateForm({ ...updateForm, description: newContent })}
+                    />
+                  </div>
                   <div>
                     <label className="block text-gray-700 font-medium mb-2 flex items-center gap-2">
                       <FaImage className="text-amber-500" /> New Image <span className="text-gray-400 text-sm">(optional)</span>
                     </label>
-                    <input type="file" name="image" accept="image/*" onChange={handleUpdateChange} className="border border-gray-300 rounded-xl px-4 py-2 w-full bg-gray-50" />
-                    {updatePreview ? (
-                      <img src={updatePreview} className="mt-3 h-28 rounded-xl object-cover border-2 border-amber-200" />
+                    <input type="file" name="image" accept="image/*" multiple onChange={handleUpdateChange} className="border border-gray-300 rounded-xl px-4 py-2 w-full bg-gray-50" />
+                    {updatePreview.length > 0 ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {updatePreview.map((url, idx) => (
+                          <img key={idx} src={url} className="h-20 w-20 rounded-xl object-cover border-2 border-amber-200" />
+                        ))}
+                      </div>
                     ) : updateBlog.image && (
-                      <img src={updateBlog.image} className="mt-3 h-28 rounded-xl object-cover border opacity-60" />
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {(Array.isArray(updateBlog.image) ? updateBlog.image : [updateBlog.image]).map((img, idx) => (
+                          <img key={idx} src={img} className="h-20 w-20 rounded-xl object-cover border opacity-60" />
+                        ))}
+                      </div>
                     )}
                   </div>
                   <motion.button
