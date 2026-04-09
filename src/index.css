@@ -1,1 +1,47 @@
 @import "tailwindcss";
+
+/* Jodit Editor - List styles fix (Tailwind preflight reset override) */
+.jodit-wysiwyg ul,
+.jodit-wysiwyg-iframe ul {
+  list-style-type: disc !important;
+  padding-left: 2em !important;
+  margin: 0.5em 0 !important;
+}
+.jodit-wysiwyg ul ul,
+.jodit-wysiwyg-iframe ul ul {
+  list-style-type: circle !important;
+}
+.jodit-wysiwyg ul ul ul,
+.jodit-wysiwyg-iframe ul ul ul {
+  list-style-type: square !important;
+}
+.jodit-wysiwyg ol,
+.jodit-wysiwyg-iframe ol {
+  list-style-type: decimal !important;
+  padding-left: 2em !important;
+  margin: 0.5em 0 !important;
+}
+.jodit-wysiwyg li,
+.jodit-wysiwyg-iframe li {
+  display: list-item !important;
+}
+.jodit-wysiwyg ol[style*="lower-alpha"],
+.jodit-wysiwyg-iframe ol[style*="lower-alpha"] {
+  list-style-type: lower-alpha !important;
+}
+.jodit-wysiwyg ol[style*="lower-greek"],
+.jodit-wysiwyg-iframe ol[style*="lower-greek"] {
+  list-style-type: lower-greek !important;
+}
+.jodit-wysiwyg ol[style*="lower-roman"],
+.jodit-wysiwyg-iframe ol[style*="lower-roman"] {
+  list-style-type: lower-roman !important;
+}
+.jodit-wysiwyg ol[style*="upper-alpha"],
+.jodit-wysiwyg-iframe ol[style*="upper-alpha"] {
+  list-style-type: upper-alpha !important;
+}
+.jodit-wysiwyg ol[style*="upper-roman"],
+.jodit-wysiwyg-iframe ol[style*="upper-roman"] {
+  list-style-type: upper-roman !important;
+}

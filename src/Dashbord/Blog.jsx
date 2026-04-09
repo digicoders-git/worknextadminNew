@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from "react";
-import axios from "axios";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import JoditEditor from "jodit-react";
+import axios from "axios";
 import {
   FaSyncAlt, FaTrash, FaPlus, FaTimes, FaEye, FaEdit,
   FaSearch, FaFilter, FaCalendarAlt, FaUser, FaTag,
@@ -16,36 +16,6 @@ const emptyForm = { heading: "", description: "", category: "", author: "", tags
 function Blog() {
   const api_url = import.meta.env.VITE_API_URL;
 
-  const joditConfig = useMemo(() => ({
-    readonly: false,
-    placeholder: "Start typing your amazing blog content...",
-    height: 400,
-    toolbarButtonSize: "middle",
-    theme: "default",
-    saveModeInCookie: false,
-    spellcheck: true,
-    language: "en",
-    toolbarAdaptive: false,
-    showCharsCounter: true,
-    showWordsCounter: true,
-    showXPathInStatusbar: false,
-    askBeforePasteHTML: true,
-    askBeforePasteFromWord: true,
-    buttons: [
-      "source", "|",
-      "bold", "italic", "underline", "strikethrough", "|",
-      "ul", "ol", "|",
-      "outdent", "indent", "|",
-      "font", "fontsize", "brush", "paragraph", "|",
-      "image", "video", "table", "link", "|",
-      "align", "undo", "redo", "|",
-      "hr", "eraser", "copyformat", "|",
-      "fullsize", "selectall", "print", "about"
-    ],
-    uploader: {
-      insertImageAsBase64URI: true
-    }
-  }), []);
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
@@ -67,6 +37,48 @@ function Blog() {
   const [updateForm, setUpdateForm] = useState(emptyForm);
   const [updatePreview, setUpdatePreview] = useState([]);
   const [updating, setUpdating] = useState(false);
+
+  // Jodit Editor refs & config
+  const createEditorRef = useRef(null);
+  const updateEditorRef = useRef(null);
+  const joditConfig = useMemo(() => ({
+    readonly: false,
+    placeholder: "Write your blog content here...",
+    height: 500,
+    style: {
+      img: {
+        float: "left",
+        maxWidth: "50%",
+        height: "auto",
+        cursor: "pointer",
+        margin: "4px 12px 8px 0",
+      },
+    },
+    editorCssClass: "jodit-blog-editor",
+    iframe: true,
+    iframeStyle: `
+      html { margin: 0; padding: 0; }
+      body { font-family: sans-serif; font-size: 14px; padding: 10px; margin: 0; }
+      img { float: left; max-width: 50%; height: auto; cursor: pointer; margin: 4px 12px 8px 0; }
+      p { margin: 0.5em 0; min-height: 1.2em; overflow: hidden; }
+      .jodit-cleaner { clear: both; }
+      ul { list-style-type: disc !important; padding-left: 2em !important; margin: 0.5em 0 !important; }
+      ul ul { list-style-type: circle !important; }
+      ul ul ul { list-style-type: square !important; }
+      ol { list-style-type: decimal !important; padding-left: 2em !important; margin: 0.5em 0 !important; }
+      li { display: list-item !important; }
+      ol[style*="lower-alpha"] { list-style-type: lower-alpha !important; }
+      ol[style*="lower-greek"] { list-style-type: lower-greek !important; }
+      ol[style*="lower-roman"] { list-style-type: lower-roman !important; }
+      ol[style*="upper-alpha"] { list-style-type: upper-alpha !important; }
+      ol[style*="upper-roman"] { list-style-type: upper-roman !important; }
+    `,
+    image: {
+      openOnDblClick: true,
+      editSrc: true,
+      useImageEditor: true,
+    },
+  }), []);
 
   // Toast Notifications
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
@@ -310,9 +322,11 @@ function Blog() {
                   <div className="md:col-span-2">
                     <label className="block text-gray-700 font-medium mb-1">Description *</label>
                     <JoditEditor
+                      ref={createEditorRef}
                       value={createForm.description}
                       config={joditConfig}
-                      onBlur={(newContent) => setCreateForm({ ...createForm, description: newContent })}
+                      onBlur={(newContent) => setCreateForm((prev) => ({ ...prev, description: newContent }))}
+                      onChange={() => { }}
                     />
                   </div>
                   <div className="md:col-span-2">
@@ -564,7 +578,21 @@ function Blog() {
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 font-semibold uppercase">Description</p>
-                      <div className="text-sm text-gray-700 leading-relaxed mt-1 prose max-w-none" dangerouslySetInnerHTML={{ __html: viewBlog.description }} />
+                      <style>{`
+                        .blog-content ul { list-style-type: disc !important; padding-left: 2em !important; margin: 0.5em 0 !important; }
+                        .blog-content ul ul { list-style-type: circle !important; }
+                        .blog-content ul ul ul { list-style-type: square !important; }
+                        .blog-content ol { list-style-type: decimal !important; padding-left: 2em !important; margin: 0.5em 0 !important; }
+                        .blog-content li { display: list-item !important; }
+                        .blog-content ol[style*="lower-alpha"] { list-style-type: lower-alpha !important; }
+                        .blog-content ol[style*="lower-greek"] { list-style-type: lower-greek !important; }
+                        .blog-content ol[style*="lower-roman"] { list-style-type: lower-roman !important; }
+                        .blog-content ol[style*="upper-alpha"] { list-style-type: upper-alpha !important; }
+                        .blog-content ol[style*="upper-roman"] { list-style-type: upper-roman !important; }
+                        .blog-content img { float: left !important; max-width: 50% !important; height: auto !important; margin: 4px 12px 8px 0 !important; cursor: pointer; }
+                        .blog-content p { margin: 0.5em 0; min-height: 1.2em; overflow: hidden; }
+                      `}</style>
+                      <div className="blog-content text-sm text-gray-700 leading-relaxed mt-1 prose max-w-none" dangerouslySetInnerHTML={{ __html: viewBlog.description }} />
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 font-semibold uppercase mb-2">Tags</p>
@@ -620,9 +648,11 @@ function Blog() {
                   <div>
                     <label className="block text-gray-700 font-medium mb-1">Description *</label>
                     <JoditEditor
+                      ref={updateEditorRef}
                       value={updateForm.description}
                       config={joditConfig}
-                      onBlur={(newContent) => setUpdateForm({ ...updateForm, description: newContent })}
+                      onBlur={(newContent) => setUpdateForm((prev) => ({ ...prev, description: newContent }))}
+                      onChange={() => { }}
                     />
                   </div>
                   <div>
