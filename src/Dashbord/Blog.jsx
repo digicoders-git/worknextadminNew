@@ -135,7 +135,7 @@ function Blog() {
         headers: { Authorization: `Bearer ${token()}`, "Content-Type": "multipart/form-data" },
       });
       setCreateForm(emptyForm);
-      setCreatePreview(null);
+      setCreatePreview([]);
       setShowCreate(false);
       fetchBlogs();
       showToast("Blog created successfully!", "success");
@@ -232,7 +232,7 @@ function Blog() {
   const inp = "border border-gray-300 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 w-full bg-gray-50";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50/30">
+    <div className="min-h-screen ">
 
       {/* Toast Notification */}
       <AnimatePresence>
@@ -250,7 +250,7 @@ function Blog() {
         )}
       </AnimatePresence>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* HEADER with Gradient */}
         <motion.div
