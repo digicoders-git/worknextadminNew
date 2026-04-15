@@ -32,6 +32,9 @@ function Blog() {
   const [viewBlog, setViewBlog] = useState(null);
   const [viewLoading, setViewLoading] = useState(false);
 
+  // Delete Confirm Modal
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
   // Update
   const [updateBlog, setUpdateBlog] = useState(null);
   const [updateForm, setUpdateForm] = useState(emptyForm);
@@ -45,38 +48,23 @@ function Blog() {
     readonly: false,
     placeholder: "Write your blog content here...",
     height: 500,
-    style: {
-      img: {
-        float: "left",
-        maxWidth: "50%",
-        height: "auto",
-        cursor: "pointer",
-        margin: "4px 12px 8px 0",
-      },
+    iframe: false,
+    uploader: {
+      insertImageAsBase64URI: true,
     },
-    editorCssClass: "jodit-blog-editor",
-    iframe: true,
-    iframeStyle: `
-      html { margin: 0; padding: 0; }
-      body { font-family: sans-serif; font-size: 14px; padding: 10px; margin: 0; }
-      img { float: left; max-width: 50%; height: auto; cursor: pointer; margin: 4px 12px 8px 0; }
-      p { margin: 0.5em 0; min-height: 1.2em; overflow: hidden; }
-      .jodit-cleaner { clear: both; }
-      ul { list-style-type: disc !important; padding-left: 2em !important; margin: 0.5em 0 !important; }
-      ul ul { list-style-type: circle !important; }
-      ul ul ul { list-style-type: square !important; }
-      ol { list-style-type: decimal !important; padding-left: 2em !important; margin: 0.5em 0 !important; }
-      li { display: list-item !important; }
-      ol[style*="lower-alpha"] { list-style-type: lower-alpha !important; }
-      ol[style*="lower-greek"] { list-style-type: lower-greek !important; }
-      ol[style*="lower-roman"] { list-style-type: lower-roman !important; }
-      ol[style*="upper-alpha"] { list-style-type: upper-alpha !important; }
-      ol[style*="upper-roman"] { list-style-type: upper-roman !important; }
-    `,
     image: {
       openOnDblClick: true,
       editSrc: true,
-      useImageEditor: true,
+      useImageEditor: false,
+      dialogWidth: 600,
+    },
+    events: {
+      afterInsertImage: function (image) {
+        const p = this.createInside.element('p');
+        p.appendChild(this.createInside.text('\u00a0'));
+        image.parentNode.insertBefore(p, image.nextSibling);
+        this.selection.setCursorIn(p);
+      },
     },
   }), []);
 
@@ -139,7 +127,7 @@ function Blog() {
       Object.entries(createForm).forEach(([k, v]) => {
         if (k === "image") {
           v.forEach(file => fd.append("image", file));
-        } else {
+        } else if (k !== "image") {
           fd.append(k, v);
         }
       });
@@ -226,9 +214,9 @@ function Blog() {
 
   // ─── DELETE ───────────────────────────────────────────
   const deleteBlog = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this blog?")) return;
     try {
       setDeletingId(id);
+      setConfirmDeleteId(null);
       await axios.delete(`${api_url}/api/blog/${id}`, {
         headers: { Authorization: `Bearer ${token()}` },
       });
@@ -329,25 +317,30 @@ function Blog() {
                       onChange={() => { }}
                     />
                   </div>
+
+                  {/* IMAGE UPLOAD */}
                   <div className="md:col-span-2">
                     <label className="block text-gray-700 font-medium mb-2 flex items-center gap-2">
-                      <FaImage className="text-indigo-500" /> Image <span className="text-red-500 text-sm">*</span>
+                      <FaImage className="text-indigo-500" /> Images <span className="text-red-500 text-sm">*</span>
                     </label>
-                    <input type="file" name="image" accept="image/*" multiple onChange={handleCreateChange} className="border border-gray-300 rounded-xl px-4 py-2 w-full bg-gray-50" />
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-indigo-300 rounded-xl cursor-pointer bg-indigo-50 hover:bg-indigo-100 transition-all">
+                      <div className="flex flex-col items-center gap-1 text-indigo-500">
+                        <FaImage size={28} />
+                        <span className="text-sm font-medium">Click karke images select karo</span>
+                        <span className="text-xs text-gray-400">PNG, JPG, WEBP supported</span>
+                      </div>
+                      <input type="file" name="image" accept="image/*" multiple onChange={handleCreateChange} className="hidden" />
+                    </label>
                     {createPreview.length > 0 && (
                       <div className="mt-3 flex flex-wrap gap-2">
                         {createPreview.map((url, idx) => (
-                          <motion.img
-                            key={idx}
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            src={url}
-                            className="h-24 w-24 rounded-xl object-cover border-2 border-indigo-200"
-                          />
+                          <motion.img key={idx} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                            src={url} className="h-24 w-24 rounded-xl object-cover border-2 border-indigo-200" />
                         ))}
                       </div>
                     )}
                   </div>
+
                   <div className="md:col-span-2 flex justify-end">
                     <motion.button
                       whileHover={{ scale: 1.02 }}
@@ -497,7 +490,7 @@ function Blog() {
                           <motion.button
                             whileHover={{ scale: 1.15 }}
                             whileTap={{ scale: 0.9 }}
-                            onClick={() => deleteBlog(blog._id)}
+                            onClick={() => setConfirmDeleteId(blog._id)}
                             disabled={deletingId === blog._id}
                             title="Delete"
                             className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-all"
@@ -584,12 +577,7 @@ function Blog() {
                         .blog-content ul ul ul { list-style-type: square !important; }
                         .blog-content ol { list-style-type: decimal !important; padding-left: 2em !important; margin: 0.5em 0 !important; }
                         .blog-content li { display: list-item !important; }
-                        .blog-content ol[style*="lower-alpha"] { list-style-type: lower-alpha !important; }
-                        .blog-content ol[style*="lower-greek"] { list-style-type: lower-greek !important; }
-                        .blog-content ol[style*="lower-roman"] { list-style-type: lower-roman !important; }
-                        .blog-content ol[style*="upper-alpha"] { list-style-type: upper-alpha !important; }
-                        .blog-content ol[style*="upper-roman"] { list-style-type: upper-roman !important; }
-                        .blog-content img { float: left !important; max-width: 50% !important; height: auto !important; margin: 4px 12px 8px 0 !important; cursor: pointer; }
+                        .blog-content img { max-width: 100%; height: auto; }
                         .blog-content p { margin: 0.5em 0; min-height: 1.2em; overflow: hidden; }
                       `}</style>
                       <div className="blog-content text-sm text-gray-700 leading-relaxed mt-1 prose max-w-none" dangerouslySetInnerHTML={{ __html: viewBlog.description }} />
@@ -655,11 +643,19 @@ function Blog() {
                       onChange={() => { }}
                     />
                   </div>
+
+                  {/* IMAGE UPLOAD */}
                   <div>
                     <label className="block text-gray-700 font-medium mb-2 flex items-center gap-2">
                       <FaImage className="text-amber-500" /> New Image <span className="text-gray-400 text-sm">(optional)</span>
                     </label>
-                    <input type="file" name="image" accept="image/*" multiple onChange={handleUpdateChange} className="border border-gray-300 rounded-xl px-4 py-2 w-full bg-gray-50" />
+                    <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-amber-300 rounded-xl cursor-pointer bg-amber-50 hover:bg-amber-100 transition-all">
+                      <div className="flex flex-col items-center gap-1 text-amber-500">
+                        <FaImage size={24} />
+                        <span className="text-sm font-medium">Click karke image select karo</span>
+                      </div>
+                      <input type="file" name="image" accept="image/*" multiple onChange={handleUpdateChange} className="hidden" />
+                    </label>
                     {updatePreview.length > 0 ? (
                       <div className="mt-3 flex flex-wrap gap-2">
                         {updatePreview.map((url, idx) => (
@@ -674,6 +670,7 @@ function Blog() {
                       </div>
                     )}
                   </div>
+
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -684,6 +681,47 @@ function Blog() {
                     {updating ? "Updating..." : "Update Blog"}
                   </motion.button>
                 </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+      {/* ── DELETE CONFIRM MODAL ── */}
+        <AnimatePresence>
+          {confirmDeleteId && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.85, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.85, opacity: 0 }}
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center"
+              >
+                <div className="text-5xl mb-4">🗑️</div>
+                <h2 className="text-xl font-bold text-gray-800 mb-2">Delete Blog?</h2>
+                <p className="text-gray-500 text-sm mb-6">Yeh blog permanently delete ho jayega. Wapas nahi aayega!</p>
+                <div className="flex gap-3 justify-center">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setConfirmDeleteId(null)}
+                    className="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-semibold hover:bg-gray-100 transition-all"
+                  >
+                    Cancel
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => deleteBlog(confirmDeleteId)}
+                    className="px-6 py-2.5 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-all"
+                  >
+                    Delete
+                  </motion.button>
+                </div>
               </motion.div>
             </motion.div>
           )}
