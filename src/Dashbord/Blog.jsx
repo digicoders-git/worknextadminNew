@@ -173,6 +173,8 @@ function Blog() {
       image: [],
     });
     setUpdatePreview([]);
+    setShowCreate(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleUpdateChange = (e) => {
@@ -273,12 +275,12 @@ function Blog() {
                   className="flex items-center gap-2 px-5 py-2.5 bg-white/20 backdrop-blur text-white rounded-xl hover:bg-white/30 transition-all shadow-lg"
                 >
                   <FaSyncAlt size={16} className={loading ? "animate-spin" : ""} />
-                  <span className="hidden md:block">Refresh</span>
+                  <span className="hidden md:block">Reset</span>
                 </motion.button>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowCreate(!showCreate)}
+                  onClick={() => { setShowCreate(!showCreate); setUpdateBlog(null); }}
                   className="flex items-center gap-2 px-5 py-2.5 bg-white text-indigo-600 rounded-xl hover:shadow-lg transition-all font-semibold"
                 >
                   {showCreate ? <FaTimes size={16} /> : <FaPlus size={16} />}
@@ -289,9 +291,9 @@ function Blog() {
           </div>
         </motion.div>
 
-        {/* ── CREATE FORM with Animation ── */}
+        {/* ── CREATE / UPDATE FORM with Animation ── */}
         <AnimatePresence>
-          {showCreate && (
+          {(showCreate || updateBlog) && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
@@ -299,21 +301,39 @@ function Blog() {
               className="mb-6 overflow-hidden"
             >
               <div className="bg-white rounded-2xl shadow-2xl p-6 border border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <FaPlus className="text-indigo-600" /> Create New Blog
-                </h2>
-                <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <input name="heading" value={createForm.heading} onChange={handleCreateChange} placeholder="Blog Heading *" required className={inp} />
-                  <input name="author" value={createForm.author} onChange={handleCreateChange} placeholder="Author Name *" required className={inp} />
-                  <input name="category" value={createForm.category} onChange={handleCreateChange} placeholder="Category *" required className={inp} />
-                  <input name="tags" value={createForm.tags} onChange={handleCreateChange} placeholder="Tags: web,react,AI" className={inp} />
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    {updateBlog ? <FaEdit className="text-indigo-600" /> : <FaPlus className="text-indigo-600" />}
+                    {updateBlog ? "Update Blog" : "Create New Blog"}
+                  </h2>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="button"
+                    onClick={() => {
+                      if (updateBlog) { setUpdateBlog(null); }
+                      else { setCreateForm(emptyForm); setCreatePreview([]); }
+                    }}
+                    className="px-5 py-2 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition-all flex items-center gap-2"
+                  >
+                    <FaSyncAlt size={14} /> {updateBlog ? "Close" : "Reset"}
+                  </motion.button>
+                </div>
+                <form onSubmit={updateBlog ? handleUpdate : handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <input name="heading" value={updateBlog ? updateForm.heading : createForm.heading} onChange={updateBlog ? handleUpdateChange : handleCreateChange} placeholder="Blog Heading *" required className={inp} />
+                  <input name="author" value={updateBlog ? updateForm.author : createForm.author} onChange={updateBlog ? handleUpdateChange : handleCreateChange} placeholder="Author Name *" required className={inp} />
+                  <input name="category" value={updateBlog ? updateForm.category : createForm.category} onChange={updateBlog ? handleUpdateChange : handleCreateChange} placeholder="Category *" required className={inp} />
+                  <input name="tags" value={updateBlog ? updateForm.tags : createForm.tags} onChange={updateBlog ? handleUpdateChange : handleCreateChange} placeholder="Tags: web,react,AI" className={inp} />
                   <div className="md:col-span-2">
                     <label className="block text-gray-700 font-medium mb-1">Description *</label>
                     <JoditEditor
-                      ref={createEditorRef}
-                      value={createForm.description}
+                      ref={updateBlog ? updateEditorRef : createEditorRef}
+                      value={updateBlog ? updateForm.description : createForm.description}
                       config={joditConfig}
-                      onBlur={(newContent) => setCreateForm((prev) => ({ ...prev, description: newContent }))}
+                      onBlur={(newContent) => updateBlog
+                        ? setUpdateForm((prev) => ({ ...prev, description: newContent }))
+                        : setCreateForm((prev) => ({ ...prev, description: newContent }))
+                      }
                       onChange={() => { }}
                     />
                   </div>
@@ -321,7 +341,8 @@ function Blog() {
                   {/* IMAGE UPLOAD */}
                   <div className="md:col-span-2">
                     <label className="block text-gray-700 font-medium mb-2 flex items-center gap-2">
-                      <FaImage className="text-indigo-500" /> Images <span className="text-red-500 text-sm">*</span>
+                      <FaImage className="text-indigo-500" /> Images {!updateBlog && <span className="text-red-500 text-sm">*</span>}
+                      {updateBlog && <span className="text-gray-400 text-sm">(optional)</span>}
                     </label>
                     <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-indigo-300 rounded-xl cursor-pointer bg-indigo-50 hover:bg-indigo-100 transition-all">
                       <div className="flex flex-col items-center gap-1 text-indigo-500">
@@ -329,13 +350,19 @@ function Blog() {
                         <span className="text-sm font-medium">Click karke images select karo</span>
                         <span className="text-xs text-gray-400">PNG, JPG, WEBP supported</span>
                       </div>
-                      <input type="file" name="image" accept="image/*" multiple onChange={handleCreateChange} className="hidden" />
+                      <input type="file" name="image" accept="image/*" multiple onChange={updateBlog ? handleUpdateChange : handleCreateChange} className="hidden" />
                     </label>
-                    {createPreview.length > 0 && (
+                    {(updateBlog ? updatePreview : createPreview).length > 0 ? (
                       <div className="mt-3 flex flex-wrap gap-2">
-                        {createPreview.map((url, idx) => (
+                        {(updateBlog ? updatePreview : createPreview).map((url, idx) => (
                           <motion.img key={idx} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
                             src={url} className="h-24 w-24 rounded-xl object-cover border-2 border-indigo-200" />
+                        ))}
+                      </div>
+                    ) : updateBlog?.image && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {(Array.isArray(updateBlog.image) ? updateBlog.image : [updateBlog.image]).map((img, idx) => (
+                          <img key={idx} src={img} className="h-24 w-24 rounded-xl object-cover border opacity-60" />
                         ))}
                       </div>
                     )}
@@ -346,10 +373,13 @@ function Blog() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       type="submit"
-                      disabled={submitting}
+                      disabled={updateBlog ? updating : submitting}
                       className="px-8 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg disabled:opacity-60 transition-all"
                     >
-                      {submitting ? "Publishing..." : "Publish Blog"}
+                      {updateBlog
+                        ? (updating ? "Updating..." : "Update Blog")
+                        : (submitting ? "Publishing..." : "Publish Blog")
+                      }
                     </motion.button>
                   </div>
                 </form>
@@ -600,91 +630,7 @@ function Blog() {
           )}
         </AnimatePresence>
 
-        {/* ── UPDATE MODAL ── */}
-        <AnimatePresence>
-          {updateBlog && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
-              >
-                <div className="flex justify-between items-center p-5 border-b bg-gradient-to-r from-amber-50 to-orange-50">
-                  <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    <FaEdit className="text-amber-600" /> Update Blog
-                  </h2>
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setUpdateBlog(null)}
-                    className="text-gray-500 hover:text-red-500 transition"
-                  >
-                    <FaTimes size={20} />
-                  </motion.button>
-                </div>
-                <form onSubmit={handleUpdate} className="p-5 space-y-4">
-                  <input name="heading" value={updateForm.heading} onChange={handleUpdateChange} placeholder="Heading *" required className={inp} />
-                  <input name="author" value={updateForm.author} onChange={handleUpdateChange} placeholder="Author *" required className={inp} />
-                  <input name="category" value={updateForm.category} onChange={handleUpdateChange} placeholder="Category *" required className={inp} />
-                  <input name="tags" value={updateForm.tags} onChange={handleUpdateChange} placeholder="Tags: web,react,AI" className={inp} />
-                  <div>
-                    <label className="block text-gray-700 font-medium mb-1">Description *</label>
-                    <JoditEditor
-                      ref={updateEditorRef}
-                      value={updateForm.description}
-                      config={joditConfig}
-                      onBlur={(newContent) => setUpdateForm((prev) => ({ ...prev, description: newContent }))}
-                      onChange={() => { }}
-                    />
-                  </div>
 
-                  {/* IMAGE UPLOAD */}
-                  <div>
-                    <label className="block text-gray-700 font-medium mb-2 flex items-center gap-2">
-                      <FaImage className="text-amber-500" /> New Image <span className="text-gray-400 text-sm">(optional)</span>
-                    </label>
-                    <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-amber-300 rounded-xl cursor-pointer bg-amber-50 hover:bg-amber-100 transition-all">
-                      <div className="flex flex-col items-center gap-1 text-amber-500">
-                        <FaImage size={24} />
-                        <span className="text-sm font-medium">Click karke image select karo</span>
-                      </div>
-                      <input type="file" name="image" accept="image/*" multiple onChange={handleUpdateChange} className="hidden" />
-                    </label>
-                    {updatePreview.length > 0 ? (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {updatePreview.map((url, idx) => (
-                          <img key={idx} src={url} className="h-20 w-20 rounded-xl object-cover border-2 border-amber-200" />
-                        ))}
-                      </div>
-                    ) : updateBlog.image && (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {(Array.isArray(updateBlog.image) ? updateBlog.image : [updateBlog.image]).map((img, idx) => (
-                          <img key={idx} src={img} className="h-20 w-20 rounded-xl object-cover border opacity-60" />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    type="submit"
-                    disabled={updating}
-                    className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold hover:shadow-lg disabled:opacity-60 transition-all"
-                  >
-                    {updating ? "Updating..." : "Update Blog"}
-                  </motion.button>
-                </form>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
       {/* ── DELETE CONFIRM MODAL ── */}
         <AnimatePresence>
