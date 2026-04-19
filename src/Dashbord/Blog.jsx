@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const token = () => localStorage.getItem("token");
 
-const emptyForm = { heading: "", description: "", category: "", author: "", tags: "", image: [] };
+const emptyForm = { heading: "", description: "", category: "", author: "", tags: "", youtubeUrl: "", image: [], mediaType: "image" };
 
 
 function Blog() {
@@ -117,7 +117,7 @@ function Blog() {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (createForm.image.length === 0) {
+    if (createForm.mediaType === "image" && createForm.image.length === 0) {
       showToast("At least one image is required!", "error");
       return;
     }
@@ -127,7 +127,7 @@ function Blog() {
       Object.entries(createForm).forEach(([k, v]) => {
         if (k === "image") {
           v.forEach(file => fd.append("image", file));
-        } else if (k !== "image") {
+        } else {
           fd.append(k, v);
         }
       });
@@ -170,7 +170,9 @@ function Blog() {
       category: blog.category,
       author: blog.author,
       tags: Array.isArray(blog.tags) ? blog.tags.join(",") : blog.tags,
+      youtubeUrl: blog.youtubeUrl || "",
       image: [],
+      mediaType: blog.youtubeUrl ? "youtube" : "image",
     });
     setUpdatePreview([]);
     setShowCreate(false);
@@ -197,6 +199,7 @@ function Blog() {
       fd.append("category", updateForm.category);
       fd.append("author", updateForm.author);
       fd.append("tags", updateForm.tags);
+      fd.append("youtubeUrl", updateForm.youtubeUrl || "");
       if (updateForm.image.length > 0) {
         updateForm.image.forEach(file => fd.append("image", file));
       }
@@ -325,6 +328,93 @@ function Blog() {
                   <input name="category" value={updateBlog ? updateForm.category : createForm.category} onChange={updateBlog ? handleUpdateChange : handleCreateChange} placeholder="Category *" required className={inp} />
                   <input name="tags" value={updateBlog ? updateForm.tags : createForm.tags} onChange={updateBlog ? handleUpdateChange : handleCreateChange} placeholder="Tags: web,react,AI" className={inp} />
                   <div className="md:col-span-2">
+                    {/* TOGGLE */}
+                    <div className="flex gap-3 mb-4">
+                      <button type="button"
+                        onClick={() => updateBlog
+                          ? setUpdateForm({ ...updateForm, mediaType: "image", youtubeUrl: "" })
+                          : setCreateForm({ ...createForm, mediaType: "image", youtubeUrl: "" })
+                        }
+                        className={`flex-1 py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all ${
+                          (updateBlog ? updateForm.mediaType : createForm.mediaType) === "image"
+                            ? "bg-indigo-600 text-white shadow-lg"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                      >
+                        <FaImage size={14} /> Image Upload
+                      </button>
+                      <button type="button"
+                        onClick={() => updateBlog
+                          ? setUpdateForm({ ...updateForm, mediaType: "youtube", image: [] })
+                          : setCreateForm({ ...createForm, mediaType: "youtube", image: [], })
+                        }
+                        className={`flex-1 py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all ${
+                          (updateBlog ? updateForm.mediaType : createForm.mediaType) === "youtube"
+                            ? "bg-red-600 text-white shadow-lg"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                      >
+                        🎬 YouTube Video
+                      </button>
+                    </div>
+
+                    {/* IMAGE UPLOAD */}
+                    {(updateBlog ? updateForm.mediaType : createForm.mediaType) === "image" && (
+                      <>
+                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-indigo-300 rounded-xl cursor-pointer bg-indigo-50 hover:bg-indigo-100 transition-all">
+                          <div className="flex flex-col items-center gap-1 text-indigo-500">
+                            <FaImage size={28} />
+                            <span className="text-sm font-medium">Click karke images select karo</span>
+                            <span className="text-xs text-gray-400">PNG, JPG, WEBP supported</span>
+                          </div>
+                          <input type="file" name="image" accept="image/*" multiple onChange={updateBlog ? handleUpdateChange : handleCreateChange} className="hidden" />
+                        </label>
+                        {(updateBlog ? updatePreview : createPreview).length > 0 ? (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {(updateBlog ? updatePreview : createPreview).map((url, idx) => (
+                              <motion.img key={idx} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                                src={url} className="h-24 w-24 rounded-xl object-cover border-2 border-indigo-200" />
+                            ))}
+                          </div>
+                        ) : updateBlog?.image?.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {(Array.isArray(updateBlog.image) ? updateBlog.image : [updateBlog.image]).map((img, idx) => (
+                              <img key={idx} src={img} className="h-24 w-24 rounded-xl object-cover border opacity-60" />
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {/* YOUTUBE URL */}
+                    {(updateBlog ? updateForm.mediaType : createForm.mediaType) === "youtube" && (
+                      <>
+                        <input
+                          name="youtubeUrl"
+                          value={updateBlog ? updateForm.youtubeUrl : createForm.youtubeUrl}
+                          onChange={updateBlog ? handleUpdateChange : handleCreateChange}
+                          placeholder="https://www.youtube.com/watch?v=xxxxxxx"
+                          className={inp}
+                        />
+                        {(updateBlog ? updateForm.youtubeUrl : createForm.youtubeUrl) && (() => {
+                          try {
+                            const url = updateBlog ? updateForm.youtubeUrl : createForm.youtubeUrl;
+                            const videoId = url.includes("youtu.be/")
+                              ? url.split("youtu.be/")[1]?.split("?")[0]
+                              : new URLSearchParams(new URL(url).search).get("v");
+                            return videoId ? (
+                              <div className="mt-3 rounded-xl overflow-hidden border border-red-200">
+                                <iframe src={`https://www.youtube.com/embed/${videoId}`}
+                                  className="w-full h-56" allowFullScreen title="YouTube Preview" />
+                              </div>
+                            ) : null;
+                          } catch { return null; }
+                        })()}
+                      </>
+                    )}
+                  </div>
+
+                  <div className="md:col-span-2">
                     <label className="block text-gray-700 font-medium mb-1">Description *</label>
                     <JoditEditor
                       ref={updateBlog ? updateEditorRef : createEditorRef}
@@ -336,36 +426,6 @@ function Blog() {
                       }
                       onChange={() => { }}
                     />
-                  </div>
-
-                  {/* IMAGE UPLOAD */}
-                  <div className="md:col-span-2">
-                    <label className="block text-gray-700 font-medium mb-2 flex items-center gap-2">
-                      <FaImage className="text-indigo-500" /> Images {!updateBlog && <span className="text-red-500 text-sm">*</span>}
-                      {updateBlog && <span className="text-gray-400 text-sm">(optional)</span>}
-                    </label>
-                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-indigo-300 rounded-xl cursor-pointer bg-indigo-50 hover:bg-indigo-100 transition-all">
-                      <div className="flex flex-col items-center gap-1 text-indigo-500">
-                        <FaImage size={28} />
-                        <span className="text-sm font-medium">Click karke images select karo</span>
-                        <span className="text-xs text-gray-400">PNG, JPG, WEBP supported</span>
-                      </div>
-                      <input type="file" name="image" accept="image/*" multiple onChange={updateBlog ? handleUpdateChange : handleCreateChange} className="hidden" />
-                    </label>
-                    {(updateBlog ? updatePreview : createPreview).length > 0 ? (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {(updateBlog ? updatePreview : createPreview).map((url, idx) => (
-                          <motion.img key={idx} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                            src={url} className="h-24 w-24 rounded-xl object-cover border-2 border-indigo-200" />
-                        ))}
-                      </div>
-                    ) : updateBlog?.image && (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {(Array.isArray(updateBlog.image) ? updateBlog.image : [updateBlog.image]).map((img, idx) => (
-                          <img key={idx} src={img} className="h-24 w-24 rounded-xl object-cover border opacity-60" />
-                        ))}
-                      </div>
-                    )}
                   </div>
 
                   <div className="md:col-span-2 flex justify-end">
@@ -458,12 +518,25 @@ function Blog() {
                       className="hover:bg-indigo-50 transition-all duration-200 group"
                     >
                       <td className="px-4 py-3">
-                        <img
-                          src={(Array.isArray(blog.image) ? blog.image[0] : blog.image) || "/logo.png"}
-                          alt={blog.heading}
-                          className="w-16 h-12 object-cover rounded-lg border-2 border-gray-200 group-hover:border-indigo-400 transition-all"
-                          onError={(e) => (e.target.src = "/logo.png")}
-                        />
+                        {blog.youtubeUrl ? (
+                          <img
+                            src={`https://img.youtube.com/vi/${
+                              blog.youtubeUrl.includes("youtu.be/")
+                                ? blog.youtubeUrl.split("youtu.be/")[1]?.split("?")[0]
+                                : new URLSearchParams(new URL(blog.youtubeUrl).search).get("v")
+                            }/hqdefault.jpg`}
+                            className="w-16 h-12 object-cover rounded-lg border-2 border-red-200"
+                            alt="thumbnail"
+                            onError={(e) => (e.target.src = "/logo.png")}
+                          />
+                        ) : (
+                          <img
+                            src={(Array.isArray(blog.image) ? blog.image[0] : blog.image) || "/logo.png"}
+                            alt={blog.heading}
+                            className="w-16 h-12 object-cover rounded-lg border-2 border-gray-200 group-hover:border-indigo-400 transition-all"
+                            onError={(e) => (e.target.src = "/logo.png")}
+                          />
+                        )}
                       </td>
                       <td className="px-4 py-3 max-w-[200px]">
                         <p className="text-sm font-semibold text-gray-800 line-clamp-2">{blog.heading}</p>
@@ -539,7 +612,7 @@ function Blog() {
           </motion.div>
         )}
 
-        {/* ── VIEW MODAL with Glassmorphism ── */}
+        {/* ── VIEW MODAL ── */}
         <AnimatePresence>
           {viewBlog !== null && (
             <motion.div
@@ -552,77 +625,115 @@ function Blog() {
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto"
               >
-                <div className="flex justify-between items-center p-5 border-b bg-gradient-to-r from-indigo-50 to-purple-50">
-                  <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    <FaEye className="text-indigo-600" /> Blog Details
+                {/* Header */}
+                <div className="flex justify-between items-center p-5 border-b bg-gradient-to-r from-indigo-600 to-purple-600">
+                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    <FaEye /> Blog Preview
                   </h2>
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
+                  <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
                     onClick={() => setViewBlog(null)}
-                    className="text-gray-500 hover:text-red-500 transition"
+                    className="text-white hover:text-red-300 transition"
                   >
                     <FaTimes size={20} />
                   </motion.button>
                 </div>
+
                 {viewLoading ? (
                   <div className="flex justify-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-indigo-600"></div>
                   </div>
                 ) : (
-                  <div className="p-5 space-y-4">
-                    {viewBlog.image && (
-                      <div className="grid grid-cols-2 gap-2">
-                        {(Array.isArray(viewBlog.image) ? viewBlog.image : [viewBlog.image]).map((img, idx) => (
-                          <img
-                            key={idx}
-                            src={img}
-                            className="w-full h-32 object-cover rounded-xl border-2 border-indigo-100"
-                            onError={(e) => (e.target.src = "/logo.png")}
-                          />
-                        ))}
+                  <div>
+                    {/* TOP MEDIA — YouTube ya Image */}
+                    {viewBlog.youtubeUrl ? (
+                      <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+                        <iframe
+                          src={`https://www.youtube.com/embed/${
+                            viewBlog.youtubeUrl.includes("youtu.be/")
+                              ? viewBlog.youtubeUrl.split("youtu.be/")[1]?.split("?")[0]
+                              : new URLSearchParams(new URL(viewBlog.youtubeUrl).search).get("v")
+                          }`}
+                          className="absolute inset-0 w-full h-full"
+                          allowFullScreen
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          title="YouTube Video"
+                        />
+                      </div>
+                    ) : viewBlog.image?.length > 0 && (
+                      <div className="w-full h-72 overflow-hidden">
+                        <img
+                          src={Array.isArray(viewBlog.image) ? viewBlog.image[0] : viewBlog.image}
+                          className="w-full h-full object-cover"
+                          onError={(e) => (e.target.src = "/logo.png")}
+                          alt={viewBlog.heading}
+                        />
                       </div>
                     )}
-                    <div>
-                      <p className="text-xs text-indigo-600 font-semibold uppercase tracking-wider">Heading</p>
-                      <p className="text-xl font-bold text-gray-800 mt-1">{viewBlog.heading}</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs text-gray-500 font-semibold uppercase flex items-center gap-1"><FaUser size={10} /> Author</p>
-                        <p className="text-sm font-medium text-gray-700 mt-1">{viewBlog.author}</p>
+
+                    {/* CONTENT */}
+                    <div className="p-6 space-y-5">
+                      {/* Category */}
+                      {viewBlog.category && (
+                        <span className="inline-block bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full border border-indigo-200">
+                          {viewBlog.category}
+                        </span>
+                      )}
+
+                      {/* Heading */}
+                      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">
+                        {viewBlog.heading}
+                      </h1>
+
+                      {/* Author + Date */}
+                      <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                        <span className="flex items-center gap-1.5">
+                          <FaUser className="text-indigo-500" /> {viewBlog.author}
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <FaCalendarAlt className="text-indigo-500" />
+                          {new Date(viewBlog.createdAt).toLocaleDateString("en-IN")}
+                        </span>
                       </div>
-                      <div>
-                        <p className="text-xs text-gray-500 font-semibold uppercase flex items-center gap-1"><FaTag size={10} /> Category</p>
-                        <span className="inline-block mt-1 px-3 py-1 text-xs font-bold rounded-full bg-indigo-100 text-indigo-800">{viewBlog.category}</span>
+
+                      {/* Tags */}
+                      {viewBlog.tags?.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {(Array.isArray(viewBlog.tags) ? viewBlog.tags : []).map((tag, i) => (
+                            <span key={i} className="flex items-center gap-1 bg-green-50 text-green-700 text-xs font-semibold px-3 py-1 rounded-full">
+                              <FaTag size={9} /> {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Description */}
+                      <div className="border-t pt-5">
+                        <style>{`
+                          .view-blog-content { font-size: 1rem; line-height: 1.8; color: #374151; }
+                          .view-blog-content p { margin: 0.6em 0; min-height: 1.2em; }
+                          .view-blog-content h1 { font-size: 2em; font-weight: 700; margin: 1em 0 0.5em; color: #111827; }
+                          .view-blog-content h2 { font-size: 1.6em; font-weight: 700; margin: 1em 0 0.5em; color: #111827; }
+                          .view-blog-content h3 { font-size: 1.3em; font-weight: 700; margin: 1em 0 0.5em; color: #111827; }
+                          .view-blog-content ul { list-style-type: disc; padding-left: 2em; margin: 0.5em 0; }
+                          .view-blog-content ol { list-style-type: decimal; padding-left: 2em; margin: 0.5em 0; }
+                          .view-blog-content li { display: list-item; margin: 0.3em 0; }
+                          .view-blog-content strong, .view-blog-content b { font-weight: 700; }
+                          .view-blog-content em, .view-blog-content i { font-style: italic; }
+                          .view-blog-content a { color: #6366f1; text-decoration: underline; }
+                          .view-blog-content blockquote { border-left: 4px solid #6366f1; padding-left: 1em; margin: 1em 0; color: #555; font-style: italic; background: #f9fafb; border-radius: 0 8px 8px 0; }
+                          .view-blog-content img { max-width: 100%; height: auto; display: block; margin: 12px auto; border-radius: 8px; }
+                          .view-blog-content table { width: 100%; border-collapse: collapse; margin: 1em 0; }
+                          .view-blog-content td, .view-blog-content th { border: 1px solid #ddd; padding: 8px; }
+                          .view-blog-content th { background: #f3f4f6; font-weight: 700; }
+                          .view-blog-content iframe { width: 100%; min-height: 315px; border: none; display: block; margin: 12px 0; }
+                          .view-blog-content pre { background: #1f2937; color: #f9fafb; padding: 1em; border-radius: 8px; overflow-x: auto; margin: 1em 0; }
+                          .view-blog-content code { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.9em; }
+                        `}</style>
+                        <div className="view-blog-content" dangerouslySetInnerHTML={{ __html: viewBlog.description }} />
                       </div>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-500 font-semibold uppercase">Description</p>
-                      <style>{`
-                        .blog-content ul { list-style-type: disc !important; padding-left: 2em !important; margin: 0.5em 0 !important; }
-                        .blog-content ul ul { list-style-type: circle !important; }
-                        .blog-content ul ul ul { list-style-type: square !important; }
-                        .blog-content ol { list-style-type: decimal !important; padding-left: 2em !important; margin: 0.5em 0 !important; }
-                        .blog-content li { display: list-item !important; }
-                        .blog-content img { max-width: 100%; height: auto; }
-                        .blog-content p { margin: 0.5em 0; min-height: 1.2em; overflow: hidden; }
-                      `}</style>
-                      <div className="blog-content text-sm text-gray-700 leading-relaxed mt-1 prose max-w-none" dangerouslySetInnerHTML={{ __html: viewBlog.description }} />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 font-semibold uppercase mb-2">Tags</p>
-                      <div className="flex flex-wrap gap-2">
-                        {(Array.isArray(viewBlog.tags) ? viewBlog.tags : []).map((tag, i) => (
-                          <span key={i} className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">#{tag}</span>
-                        ))}
-                      </div>
-                    </div>
-                    <p className="text-xs text-gray-400 border-t pt-3 mt-2">
-                      Created: {new Date(viewBlog.createdAt).toLocaleString("en-IN")}
-                    </p>
                   </div>
                 )}
               </motion.div>
